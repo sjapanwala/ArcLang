@@ -65,6 +65,16 @@ def tokenization(user_input):
 
 file_contents = []
 
+def checkfile(filepath):
+    if os.path.isfile(filepath):
+        if filepath[-3:] != ".al":
+            print("\033[91merror: \033[0mfile must be of type .al")
+            return False
+        return True
+    else:
+        print("\033[91merror: \033[0mfile does not exist")
+        return False
+
 def open_file(filename):
     with open(filename, "r") as file:
         for line in file:
@@ -82,6 +92,8 @@ def func_caller(tokens):
     if "showtokens" in tokens:
         print(tokens)
     user_input = tokens[0]
+    if user_input == "//":
+        return 1
     if isinstance(user_input, str):
         if user_input[0] == "!":
             quick_commands(user_input)
@@ -196,7 +208,7 @@ def quick_commands(user_input):
     Welcome To ArcLang \033[92m0.1\033[0m
     
     ArcLang is a basic interpretor built in Python3 for a custom build language.
-    for help with how to write code, please visit the README.md by typing '!readme'
+    for help with how to write code, please type "!teach"
 
     Basic Usage:
         interpretor commands always start with an exclamation mark, with the keyword no space.
@@ -219,14 +231,14 @@ def quick_commands(user_input):
         lines can be input with the keyword "stdin"
             example: "stdin myVar;int please add your age"
 
-        ...for more indepth help please visit the README.md by typing '!readme'
+        ...for more indepth help please type "!teach"
         """
 
     if user_input == "!help":
         print(help)
-    elif user_input == "!readme":
+    elif user_input == "!teach":
         a = subprocess.run(
-                ["curl", "https://raw.githubusercontent.com/sjapanwala/ArcLang/refs/heads/main/README.md"],
+                ["curl", "https://raw.githubusercontent.com/sjapanwala/ArcLang/refs/heads/main/archelp.txt"],
                 capture_output=True,  # Capture output
                 text=True             # Ensure output is returned as a string)
             )
@@ -519,12 +531,13 @@ def clear(void):
 
 def main():
     if len(sys.argv) > 1:
-        open_file(sys.argv[1])
+        if checkfile(sys.argv[1]):
+            open_file(sys.argv[1])
     else:
         try:
             print("""
     Welcome To ArcLang \033[92mv1.12/2024\033[0m
-    for help please type "!help", or !readme.
+    for help please type "!help", or !teach.
     to exit session press ctrl+c or type "exit"
     Created by: \033[94msjapanwala\033[0m
             """)

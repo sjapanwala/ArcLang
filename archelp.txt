@@ -13,13 +13,14 @@ Commands:
       IC  |  !help      shows the help menu
       IC  |  !teach     shows this menu
       FC  |  varlist    lists all the variables
-      FC  |  varchecl   check the existance of a variable
+      FC  |  varcheck   check the existance of a variable
       FC  |  set        sets a variable;mutable
       FC  |  const      sets a variable;immutable
       FC  |  let        sets a undefined variable;mutable
       FC  |  stdout     prints to console
       FC  |  stdin      takes an input from the console; into a var
       FC  |  clear      clears the console
+      FC  |  //         adds comments
 
 Presedence Levels:
 
