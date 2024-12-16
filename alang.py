@@ -17,8 +17,8 @@ variables = {
             },
         "version": {
             "cat": "preset",
-            "type": "flt",
-            "value": 0.1
+            "type": "str",
+            "value": "v1.2024/12"
             },
         "readme": {
             "cat": "preset",
@@ -553,7 +553,13 @@ def main():
                     tokens = tokenization(command)
                     returncode = func_caller(tokens)
         except KeyboardInterrupt:
-            print("\rArcLang Session Ended; Goodbye")
+            print("\rArcLang Session Ended Successful; Goodbye")
             exit(1)
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--v":
+            print(f"ArcLang Version: \033[92m{variables['version']['value']}\033[0m\nfrom: www.github.com/sjapanwala/ArcLang")
+            exit()
     main()
