@@ -9,6 +9,6 @@
 
 ## Installation Run
 ```bash
-curl https://raw.githubusercontent.com/sjapanwala/ArcLang/refs/heads/main/install.sh && ./install.sh
+curl -s -o https://raw.githubusercontent.com/sjapanwala/ArcLang/refs/heads/main/install.sh && bash install.sh
 ```
 
