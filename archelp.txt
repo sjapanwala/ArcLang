@@ -160,4 +160,41 @@ Lessons:
     }
     ```
 
+    Function are called by adding an @ symbol at the start
+
+    ```alang
+    @{funcname} {args}
+    ```
+
+    variables can store values that functions return from the function call
+    return codes are auto stored in the errorcode register
+    if no errorcode is returned, it will default to 1
+
+    this is a simple addition function
+
+    ```alang
+    func;int add $void {        // this is the header; return an int; no params
+      stdin a;int First Number  // this is the first input
+      stdin b;int Second Number // this is the second input
+
+      return (a + b)            // this is the return value
+      end 0                     // returning an ec of 0
+    }
+    ```
+
+    ```alang
+    set sum = @add
+    
+    [CONSOLE]
+    First Number: 1
+    Second Number: 2
+
+    stdout ?sum
+
+    3
+
+    ```
+
+   
+
 
