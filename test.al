@@ -1,10 +1,7 @@
-stdin name;str Whats Your Name?
-stdin age;int How Old Are You?
-stdin location;str Where Are You From?
-// this is a comment seperating the two sections
-stdout ---------------------------
-stdout Your Name is ?name Yes?
-stdout Your Age is ?age
-stdout You Live in ?location
-stdout ---------------------------
+stdin op;str operation
+stdin num1;int num 1
+stdin num2;int num 2
 
+stdout ?op
+
+fi ( ?op == add ) stdout ( ?num1 + ?num2 )

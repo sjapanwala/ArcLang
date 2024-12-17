@@ -20,6 +20,11 @@ Commands:
       FC  |  stdout     prints to console
       FC  |  stdin      takes an input from the console; into a var
       FC  |  clear      clears the console
+      FC  |  exit       exits the program
+      FC  |  func       defines a function
+      FC  |  fi         is the equal to `if`
+      FC  |  elsefi     is the equal to `else if`
+      FC  |  default    is the equal to `else`
       FC  |  //         adds comments
 
 Presedence Levels:
@@ -117,16 +122,42 @@ Lessons:
     stdin userAge;int what is your age?
     ```
 
-  Lesson 3: Math and logic
-  - mathematical operators can be used in Arclang to evalute logic and math
-  - all operations and logic is evaluated from left to right (no bedmas)
-  - all logic is ecaluated inside parenthesis
+    Lesson 3: Math and logic
+    - mathematical operators can be used in Arclang to evalute logic and math
+    - all operations and logic is evaluated from left to right (no bedmas)
+    - all logic is ecaluated inside parenthesis
 
-  - to set a variable to be the output of a math expression, types arent required
-  ```alang
-  set sum = (2 + 2)
-  const PiE = ( 3.14 + 2.17 )
-  set isEven = (6 % 2)
-  ```
+    - to set a variable to be the output of a math expression, types arent required
+    ```alang
+    set sum = (2 + 2)
+    const PiE = ( 3.14 * 2.17 )
+    set isEven = (6 % 2)
+    ```
+
+    Lesson 4: if else and ifelse statements
+    - these statements are here to handle logic
+    - `fi`      -> is the equal to `if`
+    - `elsefi`  -> is the equal to `else if`
+    - `default` -> is the equal to `else`
+
+    ```alang
+    fi ( ?x % 2 == 0 ) stdout ?x is even
+    elsefi ( ?x % 2 == 1 ) stdout ?x is odd
+    default stdout ?x is not a number
+    ```
+
+    Lesson 5: Functions
+    - functions are to speed repeptative tasks
+    - functions are defined like so
+
+    ```alang
+    func;{returntype} {funcname} {params} {
+      // code here
+
+
+      return {value} // this will return the value that was defined earlier in header
+      end 0          // this will end the function with a return code (0/1; or custom)
+    }
+    ```
 
 

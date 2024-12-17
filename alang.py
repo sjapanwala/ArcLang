@@ -4,6 +4,16 @@ from os import sys
 from os import system
 import operator
 
+global allowed_types
+allowed_types = ["str","int","flt","bool","arr"]
+
+envriornment_config = {
+        "showtokens": False,
+        "print_error_code": True
+        }
+
+
+
 variables = {
         "errorlevel" : {
             "cat": "preset",
@@ -36,6 +46,13 @@ variables = {
             "value": 10
         }
     }
+methods = {
+        "tryme" : {
+            "returntype": "int",
+            "params": ["null"],
+            "content" : ["stdout \033[92mHello, Congrats on Summoning Your First Function!\033[0m","end 1", "return hello"],
+        },
+    }
 
 
 def tokenization(user_input):
@@ -57,6 +74,9 @@ def tokenization(user_input):
             if "_" in token:
                 a,b = add_space(token)
                 token_array[i] = f"{a} {b}"
+            if token[0] == "@":
+                ec,return_val = run_func(token[1:],token_array)
+                token_array[i] = return_val[0]
         if "(" in token_array:
             token_array = do_math(token_array)
         return token_array
@@ -75,22 +95,27 @@ def checkfile(filepath):
         print("\033[91merror: \033[0mfile does not exist")
         return False
 
+raw_files = []
 def open_file(filename):
     with open(filename, "r") as file:
         for line in file:
             file_contents.append(line.strip())
+            raw_files.append(line)
     run_file(file_contents)
 
 def run_file(file_contents):
     for codeline in file_contents:
         tokenizer = tokenization(codeline)
-        func_caller(tokenizer)
+        if codeline in func_ignore:
+            continue
+        else:
+            func_caller(tokenizer)
 
 def func_caller(tokens):
+    if envriornment_config["showtokens"] == True:
+        print(tokens)
     if tokens == None:
         return 1
-    if "showtokens" in tokens:
-        print(tokens)
     user_input = tokens[0]
     if user_input == "//":
         return 1
@@ -98,6 +123,19 @@ def func_caller(tokens):
         if user_input[0] == "!":
             quick_commands(user_input)
             return 0
+    if isinstance(user_input, str):
+        if user_input[0:5] == "func;":
+            # this calls for function making
+            error_code = construct_functions(tokens)
+            return error_code
+    if isinstance(user_input, str):
+        if user_input[0] == "@":
+            if user_input[1:] not in methods:
+                print(f"\033[91merror: \033[0mthe function '{user_input}' does not exist")
+                return 1
+            else:
+                error_code = run_func(user_input[1:],tokens[1:])
+                return error_code
     if user_input in globals() and callable(globals()[user_input]):
         error_code = globals()[user_input](list(tokens[1:]))
         return error_code
@@ -142,6 +180,125 @@ def deVar(variable):
             return "\033[90mUndefined\033[0m"
     else:
         return "\033[90mUndefined\033[0m"
+
+def run_func(funcname,params):
+    content = methods[funcname]["content"]
+    ec = 0
+    returnval = []
+    for line in content:
+        if line == "}":
+            continue
+        elif line[:3] == "end":
+            # this is the error code
+            ec = line[4:]
+            continue
+        elif line[:6] == "return":
+            # this is the return value
+            returnval= tokenization(line[7:])
+            continue
+        tokenizer = tokenization(line)
+        func_caller(tokenizer)
+    return ec,returnval
+
+
+def construct_functions(tokens):
+    if tokens[0].find(";") == -1:
+        print("\033[91merror: \033[0mno return type specified")
+        return 1
+    else:
+        semi_idx = tokens[0].find(';') 
+        functype = tokens[0][semi_idx+1:]
+        if functype not in allowed_types:
+            print("\033[91merror: \033[0mreturn type not allowed")
+            return 1
+        if len(tokens) < 2:
+            print("\033[91merror: \033[0mno function name specified")
+            return 1
+        elif len(tokens) < 3:
+            print("\033[91merror: \033[0mno function intake specified")
+            return 1
+        elif tokens[-1] != "{":
+            print("\033[91merror: \033[0mno function opener specified")
+            return 1
+        else:
+            func_name = tokens[1]
+            func_intake = tokens[2:-1]
+            if func_name in methods:
+                print("\033[91merror: \033[0mfunction already exists")
+                return 1
+            for i in func_intake:
+                if i != "$void":
+                    if i[0] != "$":
+                        print("\033[91merror: \033[0mno function intake specified")
+                        return 1
+                # we come here if all is good, we can start reading the function now
+                function_instructions = []
+                if file_mode:
+                    func_header = " ".join(tokens)
+                    with open(file_path, "r") as file:
+                        for line in file:
+                            if line.strip() == func_header.strip():
+                                while "}" not in line.strip():
+                                    line = file.readline()
+                                    global func_ignore
+                                    func_ignore.append(line.strip())
+                                    function_instructions.append(line.strip())
+
+                        
+
+                else:
+                    file_input = ""
+                    while "}" not in file_input:
+                        file_input = input("func;> ")
+                        function_instructions.append(file_input)
+                params = ""
+                for param in func_intake:
+                    if param != "$void":
+                        pass
+                params = "null"
+                methods[func_name] = {
+                    "returntype": functype,
+                    "params": params,
+                    "content": function_instructions,
+                        }
+
+                return 0
+
+
+def fi(tokens):
+    if envriornment_config["showtokens"] == True:
+        print(tokens)
+    global fi_code
+    fi_code = 0
+    if tokens[0] == True:
+        func_caller(tokens[1:])
+        fi_code = 0
+        return 0
+    else:
+        fi_code = 1
+        return 1
+
+def elsefi(tokens):
+    global fi_code
+    if fi_code != 1:
+        return 1
+    else:
+        if tokens[0] == True:
+            func_caller(tokens[1:])
+            fi_code = 0
+            return 0
+        else:
+            fi_code = 1
+            return 1
+
+def default(tokens):
+    if fi_code !=1:
+        return 1
+    else:
+        func_caller(tokens[0:])
+        return 0
+
+
 
 
 def varlist(void):
@@ -290,6 +447,10 @@ def do_math(tokens):
 
     return tokens
 
+def funclist(void):
+    for i in methods:
+        print(i)
+    return 0
 # -- everything before is the actual working sections of the interpretor -- #
 # -- everything after this line is the interpretor commands -- #
 
@@ -529,10 +690,19 @@ def clear(void):
         return 1
 
 
-def main():
+def main(returncode):
     if len(sys.argv) > 1:
         if checkfile(sys.argv[1]):
-            open_file(sys.argv[1])
+            global file_path
+            file_path = sys.argv[1]
+            global file_mode
+            file_mode = True
+            open_file(file_path)
+            if envriornment_config["print_error_code"] == True:
+                if returncode != 0:
+                    print(f"\033[97mExit Code: \033[91m{returncode}\033[0m")
+                else:
+                    print(f"\033[97mExit Code: \033[92m{returncode}\033[0m")
     else:
         try:
             print("""
@@ -541,8 +711,8 @@ def main():
     to exit session press ctrl+c or type "exit"
     Created by: \033[94msjapanwala\033[0m
             """)
-            returncode = 0
             while True:
+                file_mode = False
                 command = ""
                 while command.lower() != "exit":
                     if returncode != 0:
@@ -552,14 +722,26 @@ def main():
                     command = input(f"\n\033[33mArcLang {rc}\033[0m> ")
                     tokens = tokenization(command)
                     returncode = func_caller(tokens)
+                    if envriornment_config["print_error_code"] == True:
+                        if returncode != 0:
+                            print(f"\033[97mExit Code: \033[91m{returncode}\033[0m")
+                        else:
+                            print(f"\033[97mExit Code: \033[92m{returncode}\033[0m")
         except KeyboardInterrupt:
             print("\rArcLang Session Ended Successful; Goodbye")
             exit(1)
 
 
 if __name__ == "__main__":
+    global returncode
+    returncode = 0
+    global fi_code
+    fi_code = 0
+    global func_ignore
+    func_ignore = []
+
     if len(sys.argv) > 1:
         if sys.argv[1] == "--v":
             print(f"ArcLang Version: \033[92m{variables['version']['value']}\033[0m\nfrom: www.github.com/sjapanwala/ArcLang")
             exit()
-    main()
+    main(returncode)
