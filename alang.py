@@ -5,7 +5,7 @@ from os import system
 import operator
 
 global allowed_types
-allowed_types = ["str","int","flt","bool","arr"]
+allowed_types = ["str","int","flt","bool","arr","void"]
 
 envriornment_config = {
         "showtokens": False,
@@ -48,9 +48,10 @@ variables = {
     }
 methods = {
         "tryme" : {
-            "returntype": "int",
-            "params": ["null"],
-            "content" : ["stdout \033[92mHello, Congrats on Summoning Your First Function!\033[0m","end 1", "return hello"],
+            "returntype": "void",
+            "params": 0,
+            "param_order": [],
+            "content" : ["stdout \033[92mHello, Congrats on Summoning Your First Function!\033[0m",],
         },
     }
 
@@ -117,6 +118,8 @@ def func_caller(tokens):
     if tokens == None:
         return 1
     user_input = tokens[0]
+    if user_input == "void":
+        return 0
     if user_input == "//":
         return 1
     if isinstance(user_input, str):
@@ -181,25 +184,79 @@ def deVar(variable):
     else:
         return "\033[90mUndefined\033[0m"
 
-def run_func(funcname,params):
-    content = methods[funcname]["content"]
+def deVarFunc(var):
+    if var[1:] in variables:
+        var_val = variables[var[1:]]["value"]
+        var_type = variables[var[1:]]["type"]
+        if var_type == "str":
+            return str(var_val)
+        elif var_type == "int":
+            return int(var_val)
+        elif var_type == "arr":
+            var_val = list(var_val)
+            return var_val
+        elif var_type == "flt":
+            return float(var_val)
+        elif var_type == "bool":
+            return bool(var_val)
+        else:
+            return "\033[90mUndefined\033[0m"
+    else:
+        return "\033[90mUndefined\033[0m"
+
+
+
+def run_func(funcname, params):
+    # Remove first parameter (method call)
+    params = params[1:]
+    
+    # Get method details
+    method = methods[funcname]
+    
+    # Validate parameter count
+    if len(params) != method["params"]:
+        print(f"\033[91merror: \033[0mparameter error, expected {method['params']}; given {len(params)}")
+        return 1, None
+    
+    # Create parameter hash map
+    param_hash = {}
+    for var, value in zip(method["param_order"], params):
+        param_hash[var] = value
+    
+    # Create a copy of content to modify
+    content = method["content"].copy()
+    
+    # Replace parameters in content
+    for i, line in enumerate(content):
+        for var, value in param_hash.items():
+            line = line.replace(var, str(value))
+        content[i] = line
+    
+    # Process content
     ec = 0
     returnval = []
+    
     for line in content:
-        if line == "}":
+        if line == '}':
             continue
-        elif line[:3] == "end":
-            # this is the error code
-            ec = line[4:]
+        
+        if line.startswith('end'):
+            ec = line.split()[1]
             continue
-        elif line[:6] == "return":
-            # this is the return value
-            returnval= tokenization(line[7:])
+        
+        if line.startswith('return'):
+            returnval = tokenization(line[7:])
             continue
+        
+        # Call function with tokenized line
         tokenizer = tokenization(line)
         func_caller(tokenizer)
-    return ec,returnval
-
+    
+    # Handle void return type
+    if method["returntype"] == "void":
+        returnval = ["void"]
+    
+    return ec, returnval
 
 def construct_functions(tokens):
     if tokens[0].find(";") == -1:
@@ -231,6 +288,12 @@ def construct_functions(tokens):
                     if i[0] != "$":
                         print("\033[91merror: \033[0mno function intake specified")
                         return 1
+                if i.find(";") == -1:
+                    if i != "$void":
+                        print(f"\033[91merror: \033[0mno function intake type specified for {i}")
+                        return 1
+
+                
                 # we come here if all is good, we can start reading the function now
                 function_instructions = []
                 if file_mode:
@@ -251,14 +314,41 @@ def construct_functions(tokens):
                     while "}" not in file_input:
                         file_input = input("func;> ")
                         function_instructions.append(file_input)
-                params = ""
+
+                if functype != "void":
+                    find_return = False
+                    for cont in function_instructions:
+                        if "return" in cont:
+                            find_return = True
+
+
+                    if not find_return:
+                        print(f"\033[91merror: \033[0mno return value; expected type;{functype}")
+                        return 1
+
+                param_order = []
                 for param in func_intake:
                     if param != "$void":
-                        pass
-                params = "null"
+                        if len(func_intake) >= 1:
+                            semi_idx = param.find(";")
+                            param_name = param[:semi_idx]
+                            param_type = param[semi_idx+1:]
+                            param_order.append(param_name)
+                            variables[param_name] = {
+                                    "cat": "func",
+                                    "type": param_type,
+                                    "value": "hidden"
+                                    }
+                    else:
+                        func_intake = []
+            
+
+                
+
                 methods[func_name] = {
                     "returntype": functype,
-                    "params": params,
+                    "params": len(func_intake),
+                    "param_order": param_order,
                     "content": function_instructions,
                         }
 
@@ -319,6 +409,8 @@ def varlist(void):
                 show_val = f"{variables[key]['value']}"
             if str(variables[key]['cat']) == "preset":
                 show_mod = "False"
+            elif str(variables[key]['cat']) == "func":
+                show_mod = "Reserved"
             else:
                 show_mod = "True"
             print(format_string.format(
@@ -739,6 +831,8 @@ if __name__ == "__main__":
     fi_code = 0
     global func_ignore
     func_ignore = []
+    global func_allowance 
+    func_allowance = False
 
     if len(sys.argv) > 1:
         if sys.argv[1] == "--v":

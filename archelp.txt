@@ -123,6 +123,7 @@ Lessons:
     ```
 
     Lesson 3: Math and logic
+
     - mathematical operators can be used in Arclang to evalute logic and math
     - all operations and logic is evaluated from left to right (no bedmas)
     - all logic is ecaluated inside parenthesis
@@ -135,6 +136,7 @@ Lessons:
     ```
 
     Lesson 4: if else and ifelse statements
+
     - these statements are here to handle logic
     - `fi`      -> is the equal to `if`
     - `elsefi`  -> is the equal to `else if`
@@ -147,8 +149,11 @@ Lessons:
     ```
 
     Lesson 5: Functions
+
     - functions are to speed repeptative tasks
     - functions are defined like so
+    - function args need to be defined with the prefix $ -> reserves for func vars
+    - if a return type if not void; it needs to return values or else it wont run
 
     ```alang
     func;{returntype} {funcname} {params} {
