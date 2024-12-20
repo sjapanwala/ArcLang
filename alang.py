@@ -16,7 +16,7 @@ envriornment_config = {
 
 variables = {
         "errorlevel" : {
-            "cat": "preset",
+            "cat": "assigned",
             "type": "int",
             "value": 0
             },
@@ -33,7 +33,7 @@ variables = {
         "readme": {
             "cat": "preset",
             "type": "str",
-            "value": "Access The Readme Here: https://www.github.com/sjapanwala/ArcLang"
+            "value": "https://www.github.com/sjapanwala/ArcLang"
             },
         "x" : {
             "cat": "assigned",
@@ -48,11 +48,17 @@ variables = {
     }
 
 methods = {
-        "tryme" : {
+        "function" : {
             "returntype": "void",
             "params": 0,
             "param_order": [],
             "content" : ["stdout \033[92mHello World!\nCongrats on Summoning Your First Function!\033[0m",],
+        },
+        "eccheck" : {
+            "returntype": "void",
+            "params": 0,
+            "param_order": [],
+            "content" : ["fi ( ?errorlevel == 0 ) stdout good", "default stdout bad","}"],
         },
         "add" : {
             "returntype": "int",
@@ -229,6 +235,7 @@ def deVarFunc(var):
             return "\033[90mUndefined\033[0m"
     else:
         return "\033[90mUndefined\033[0m"
+    
 
 
 
@@ -498,10 +505,10 @@ def varlist(void):
         show_val = ""
         show_mod = ""
         for key in variables:
-            if len(str(variables[key]["value"])) > 10:
-                show_val = f"{variables[key]['value'][:10]}..."
-            else:
-                show_val = f"{variables[key]['value']}"
+            #if len(str(variables[key]["value"])) > 10:
+                #show_val = f"{variables[key]['value'][:10]}..."
+            #else:
+                #show_val = f"{variables[key]['value']}"
             if str(variables[key]['cat']) == "preset":
                 show_mod = "False"
             elif str(variables[key]['cat']) == "func":
@@ -512,7 +519,7 @@ def varlist(void):
                 str(key), 
                 str(show_mod),
                 str(variables[key]['type']), 
-                str(show_val)
+                str(variables[key]['value'])
             ))
         return 0
 def varcheck(void):
@@ -683,6 +690,10 @@ def set(tokens):
         if isinstance(var_valueraw, int):
             var_val = var_valueraw
             var_type = type_check(var_val)
+        
+        elif isinstance(var_valueraw, float):
+            var_val = var_valueraw
+            var_type = type_check(var_val)
 
         elif var_valueraw.find(";") > -1:
             semi_idx = var_valueraw.find(";")
@@ -740,6 +751,11 @@ def const(tokens):
         if isinstance(var_valueraw, int):
             var_val = var_valueraw
             var_type = type_check(var_val)
+
+        elif isinstance(var_valueraw, float):
+            var_val = var_valueraw
+            var_type = type_check(var_val)
+
         elif var_valueraw.find(";") > -1:
             semi_idx = var_valueraw.find(";")
             var_val = var_valueraw[:semi_idx]
@@ -878,6 +894,25 @@ def clear(void):
         return 0
     except:
         return 1
+    
+def numceil(tokens):
+    if not tokens[0]:
+        print("\033[91mnumceil:args error: \033[0mplease add expected params")
+        return 1
+    elif not tokens[1]:
+        print("\033[91mnumceil:args error: \033[0mplease add significant digits")
+        return 1
+    else:
+        try:
+            num = float(tokens[0])
+            sig = int(tokens[1])
+            num = round(num, sig)
+            print(num)
+            return 0
+        except:
+            return 1
+
+
 
 
 def main(returncode):
@@ -912,6 +947,7 @@ def main(returncode):
                     command = input(f"\n\033[33mArcLang {rc}\033[0m> ")
                     tokens = tokenization(command)
                     returncode = func_caller(tokens)
+                    set(["errorlevel","=",f"{returncode}"])
                     if envriornment_config["print_error_code"] == True:
                         if returncode != 0:
                             print(f"\033[97mExit Code: \033[91m{returncode}\033[0m")
