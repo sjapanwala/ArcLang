@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+from sys import exception
 import subprocess, getpass, os, time
 from os import sys
 from os import system
 import operator
+import random
+import time
 
 global allowed_types
 allowed_types = ["str","int","flt","bool","arr","void"]
@@ -28,23 +31,28 @@ variables = {
         "version": {
             "cat": "preset",
             "type": "str",
-            "value": "v1.2024/12"
+            "value": "v01/25"
             },
-        "readme": {
+        "pi": {
             "cat": "preset",
-            "type": "str",
-            "value": "https://www.github.com/sjapanwala/ArcLang"
+            "type": "flt",
+            "value": 3.14
             },
-        "x" : {
-            "cat": "assigned",
-            "type": "int",
-            "value": 11
+        "eu": {
+            "cat": "preset",
+            "type": "flt",
+            "value": 2.72
             },
-        "y" : {
-            "cat": "assigned",
+        "iteration" : {
+            "cat" : "assigned",
             "type": "int",
-            "value": 10
-        }
+            "value": 0
+            },
+        "rand": {
+            "cat": "preset",
+            "type": "randint",
+            "value": f"randval(1-100)"
+            }
     }
 
 methods = {
@@ -54,11 +62,11 @@ methods = {
             "param_order": [],
             "content" : ["stdout \033[92mHello World!\nCongrats on Summoning Your First Function!\033[0m",],
         },
-        "eccheck" : {
+        "status" : {
             "returntype": "void",
             "params": 0,
             "param_order": [],
-            "content" : ["fi ( ?errorlevel == 0 ) stdout good", "default stdout bad","}"],
+            "content" : ["stdout Exited With Status Code ?errorlevel","}"],
         },
         "add" : {
             "returntype": "int",
@@ -76,7 +84,7 @@ methods = {
             "returntype": "int",
             "params": 2,
             "param_order": ["$a","$b"],
-            'content': ['return ( $a * $b )', '}']
+            'con/tent': ['return ( $a * $b )', '}']
         },
         "div": {
             "returntype": "int",
@@ -101,6 +109,8 @@ def tokenization(user_input):
         token_array = user_input.split(" ")
         for i,token in enumerate(token_array):
             # check for precedence
+            if token == "quit":
+                exit()
             if "?" in token[0]:
                 recovered = deVar(token)
                 token_array[i] = recovered
@@ -115,6 +125,7 @@ def tokenization(user_input):
         return token_array
     except Exception as e:
         return ["undefined"]
+
 
 file_contents = []
 
@@ -153,7 +164,11 @@ def func_caller(tokens):
     if user_input == "void":
         return 0
     if user_input == "//":
-        return 1
+        return 2
+    if user_input == "}":
+        return 2
+    if user_input == "{":
+        return 2
     if isinstance(user_input, str):
         if user_input[0] == "!":
             quick_commands(user_input)
@@ -176,7 +191,7 @@ def func_caller(tokens):
         return error_code
     else:
         print(f"\033[91mstatment:syntax error: \033[0mthe command '{user_input}' is not recognized")
-        return 1
+        return 4
 
 def type_check(value):
     if isinstance(value, int):
@@ -211,6 +226,8 @@ def deVar(variable):
             return float(var_val)
         elif var_type == "bool":
             return bool(var_val)
+        elif var_type == "randint":
+            return random.randint(random_min,random_max)
         else:
             return "\033[90mUndefined\033[0m"
     else:
@@ -249,7 +266,7 @@ def run_func(funcname, params):
     # Validate parameter count
     if len(params) != method["params"]:
         print(f"\033[91mparameter:syntax error: \033[0mexpected {method['params']}; given {len(params)}")
-        return 1, None
+        return 4, None
     
     # Create parameter hash map
     param_hash = {}
@@ -294,22 +311,22 @@ def run_func(funcname, params):
 def construct_functions(tokens):
     if tokens[0].find(";") == -1:
         print("\033[91mfunction:type error: \033[0mno return type specified")
-        return 1
+        return 3
     else:
         semi_idx = tokens[0].find(';') 
         functype = tokens[0][semi_idx+1:]
         if functype not in allowed_types:
             print("\033[91mfunction:type error: \033[0mreturn type not allowed")
-            return 1
+            return 3
         if len(tokens) < 2:
             print("\033[91mfunction:naming error: \033[0mno function name specified")
             return 1
         elif len(tokens) < 3:
             print("\033[91mfunction:syntax error: \033[0mno function intake specified")
-            return 1
+            return 4
         elif tokens[-1] != "{":
             print("\033[91mfunction:syntax error: \033[0mno function opener specified")
-            return 1
+            return 4
         else:
             func_name = tokens[1]
             func_intake = tokens[2:-1]
@@ -320,11 +337,11 @@ def construct_functions(tokens):
                 if i != "$void":
                     if i[0] != "$":
                         print("\033[91mfunction:syntax error: \033[0mno function intake specified")
-                        return 1
+                        return 4
                 if i.find(";") == -1:
                     if i != "$void":
                         print(f"\033[91mfunction:type error: \033[0mno function intake type specified for {i}")
-                        return 1
+                        return 3
 
                 
                 # we come here if all is good, we can start reading the function now
@@ -357,7 +374,7 @@ def construct_functions(tokens):
 
                     if not find_return:
                         print(f"\033[91mfunction:syntax error: \033[0mno return value; expected type;{functype}")
-                        return 1
+                        return 4
 
                 param_order = []
                 for param in func_intake:
@@ -400,72 +417,79 @@ def fi(tokens):
         fi_code = 1
         return 1
     
-def loop(tokens):
-    # keep implementing
-    loop_types = ["while","for","do"]
-    loop_comparisons = ["<","<=",">",">=","==","!="]
+def repeat(tokens):
+    """
+    repeat 5 {
+
+    }
+    """
     if len(tokens) < 1:
-        print("\033[91mloop:syntax error: \033[0mno loop condition specified")
+        print("\033[91mrepeat:value: \033[0mno repition attribute assigned")
+        return 1
+    elif tokens[-1] != "{":
+        print("\033[91mrepeat:opener: \033[0mno repeat loop opener provided")
         return 1
     else:
-        loop_type = tokens[0]
-        if loop_type not in loop_types:
-            print("\033[91mloop:type error: \033[0mloop type not allowed")
-            return 1
-        else:
-            if loop_type == "while":
-                if len(tokens) < 5:
-                    print("\033[91mloop:syntax error: \033[0mnot enough arguements provided")
-                    return 1
-                conditional_var_raw = tokens[1]
-                if "$" not in conditional_var_raw:
-                    print("\033[91mloop:syntax error: \033[0mno conditional variable specified")
-                    return 1
-                elif ";" not in conditional_var_raw:
-                    print("\033[91mloop:typeerror: \033[0mno conditional variable type specified")
-                    return 1
-                conditional_var = conditional_var_raw[:conditional_var_raw.find(";")]
-                conditoinal_var_type = conditional_var_raw[conditional_var_raw.find(";")+1:]
-                if conditoinal_var_type not in allowed_types:
-                    print("\033[91mloop:type error: \033[0mtype not allowed")
-                    return 1
-                compare_op = tokens[2]
-                if compare_op not in loop_comparisons:
-                    print("\033[91mloop:operator error: \033[0mcomparison operator not allowed")
-                benchmark_var_raw = tokens[3]
-                if ";" not in benchmark_var_raw:
-                    print("\033[91mloop:syntax error: \033[0mno benchmark variable type specified")
-                    return 1
-                benchmark_var = benchmark_var_raw[:benchmark_var_raw.find(";")]
-                benchmark_var_type = benchmark_var_raw[benchmark_var_raw.find(";")+1:]
-                if benchmark_var_type not in allowed_types:
-                    print("\033[91mloop:type error: \033[0mbenchmark type not allowed")
-                    return 1
-                if tokens[4] != "{":
-                    print("\033[91mloop:syntax error: \033[0mno loop opener specified")
-                    return 1
-                loop_contents = []
-                if file_mode:
-                    loop_header = " ".join(tokens)
-                    loop_header = f"loop {loop_header}"
-                    with open(file_path, "r") as file:
-                        for line in file:
-                            if line.strip() == loop_header.strip():
+        try:
+            isinstance(tokens[0],int)
+            repeat_val = int(tokens[0])
+        except:
+            print("\033[91mrepeat:type error: \033[0mno int assigned for repeator")
+            return 3
+        
+    loop_contents = []
+    try:
+        if file_mode:
+            func_header = f"repeat {repeat_val} {{"
+            repeat_val -= 1
+            with open(file_path,"r") as read_file:
+                for line in read_file:
+                    if line.strip() == func_header:
+                        with open(file_path) as read_file:
+                            for line in read_file:
                                 while "}" not in line.strip():
-                                    loop_contents.append(line.strip())
-                else:
-                    file_input = ""
-                    while "}" not in file_input:
-                        file_input = input("loop> ")
-                        loop_contents.append(file_input)
+                                    line = read_file.readline()
+                                    line = line.strip()
+                                    if line != "}":
+                                        loop_contents.append(line)
+        else:
+            file_input = ""
+            while file_input != "}":
+                file_input = input("repeat loop> ")
+                if file_input != "}":
+                    loop_contents.append(file_input)
+    except:
+        return 1
+
+    try:
+        indep = variables["iteration"]["value"]
+        while indep < repeat_val:
+            for i in loop_contents:
+                minitoke = tokenization(i)
+                func_caller(minitoke)
+                variables["iteration"]["value"] += 1
+                indep += 1
+        variables["iteration"]["value"] = 0
+        return 0
+    except:
+        return 1
 
 
-
-
-
-
-                
-
+def rand(tokens):
+    if len(tokens) < 2:
+        print("\033[91mrandint:params error:\033[0mnot enough params given")
+        return 1
+    else:
+        try:
+            random_min = int(tokens[0])
+        except:
+            return 1
+        try:
+            random_max = int(tokens[1])
+        except:
+            return 1
+        print(random.randint(random_min,random_max))
+        return 0
 
 
 
@@ -489,6 +513,7 @@ def default(tokens):
     else:
         func_caller(tokens[0:])
         return 0
+
 
 
 
@@ -522,6 +547,23 @@ def varlist(void):
                 str(variables[key]['value'])
             ))
         return 0
+
+def funclist(void):
+    print("\033[33mAll Defined Functions\n\033[0m")
+    max_method_length = max(len(str(key)) for key in methods)
+    max_type_length = max(len(str(methods[key]['returntype'])) for key in methods)
+    max_arg_length = max(len(str(methods[key]['params'])) for key in methods)
+    format_string = f"{{:<{max_method_length}}}     {{:<{max_type_length}}}     {{:<{max_arg_length}}}"
+    print(format_string.format("Function","Type","Expected"))
+    print(format_string.format("________","____","_______\n"))
+    for key in methods:
+        print(format_string.format(
+                str(key), 
+                str(methods[key]['returntype']), 
+                str(methods[key]['params'])
+            ))
+    return 0
+
 def varcheck(void):
     if void[0] in variables:
         print("\033[93mVariable Information:\033[0m\n")
@@ -561,28 +603,8 @@ def quick_commands(user_input):
     ArcLang is a basic interpretor built in Python3 for a custom build language.
     for help with how to write code, please type "!teach"
 
-    Basic Usage:
-        interpretor commands always start with an exclamation mark, with the keyword no space.
-            "!help"
-
-        variables can be defined with the keyword "set"
-            "set x = 10;int"
-                or
-            "const x = 10;int"
-                or
-            "let x;int"
-
-
-        variables are accessed with a question mark, with the variable name no space.
-            example: "?x"
-
-        lines can be output with the keyword "stdout"
-            example: "stdout hello world"
-
-        lines can be input with the keyword "stdin"
-            example: "stdin myVar;int please add your age"
-
-        ...for more indepth help please type "!teach"
+    To Learn,
+        Visit Github, or Read `archelp.txt`
         """
 
     if user_input == "!help":
@@ -641,10 +663,7 @@ def do_math(tokens):
 
     return tokens
 
-def funclist(void):
-    for method_name in methods:
-        print(method_name, methods[method_name]['returntype'])
-    return 0
+
 
 
 # -- everything before is the actual working sections of the interpretor -- #
@@ -689,11 +708,11 @@ def set(tokens):
         # Check if there is a semicolon and process accordingly
         if isinstance(var_valueraw, int):
             var_val = var_valueraw
-            var_type = type_check(var_val)
+            var_type = "int"
         
         elif isinstance(var_valueraw, float):
             var_val = var_valueraw
-            var_type = type_check(var_val)
+            var_type = "flt"
 
         elif var_valueraw.find(";") > -1:
             semi_idx = var_valueraw.find(";")
@@ -705,7 +724,7 @@ def set(tokens):
 
         if var_type not in allowed_types:
             print("\033[91mset:type error: \033[0minvalid type")
-            return 1
+            return 3
 
         cat_val = "assigned"
 
@@ -766,7 +785,7 @@ def const(tokens):
 
         if var_type not in allowed_types:
             print("\033[91mconst:type error: \033[0minvalid type")
-            return 1
+            return 3
 
         cat_val = "preset"
 
@@ -854,7 +873,7 @@ def stdin(tokens):
     
     if var_keyraw.find(";") == -1:
         print("\033[91mstdin:type error: \033[0mno type specified")
-        return 1
+        return 3
 
     try:
         semi_idx = var_keyraw.find(";")
@@ -868,7 +887,7 @@ def stdin(tokens):
         var_types = ["str","int","bool","arr"]
         if var_type not in var_types:
             print("\033[91mstdin:type error: \033[0minvalid type provided")
-            return 1
+            return 3
 
         phrase = " ".join(tokens[1:])
         
@@ -896,6 +915,8 @@ def clear(void):
         return 1
     
 def numceil(tokens):
+    if len(tokens) < 2:
+        print("\033[91mnumceil:args error: \033[0mplease add expected params")
     if not tokens[0]:
         print("\033[91mnumceil:args error: \033[0mplease add expected params")
         return 1
@@ -911,6 +932,25 @@ def numceil(tokens):
             return 0
         except:
             return 1
+
+def ls(tokens):
+    if len(tokens) < 1:
+        dir_path = '.'
+    else:
+        dir_path = tokens[0]
+    files = []
+    try:
+        for filename in os.listdir(dir_path):
+            if filename[filename.rfind("."):] == ".al":
+                files.append(filename)
+            else:
+                continue
+        print("Compatible Files")
+        print("   ".join(files))
+        return 0
+    except:
+        return 1
+
 
 
 
@@ -930,21 +970,23 @@ def main(returncode):
                     print(f"\033[97mExit Code: \033[92m{returncode}\033[0m")
     else:
         try:
-            print("""
-    Welcome To ArcLang \033[92mv1.12/2024\033[0m
+            print(f"""
+    Welcome To ArcLang \033[92m{variables['version']['value']}\033[0m
     for help please type "!help", or !teach.
-    to exit session press ctrl+c or type "exit"
+    to exit session press ctrl+c
     Created by: \033[94msjapanwala\033[0m
             """)
             while True:
                 file_mode = False
                 command = ""
                 while command.lower() != "exit":
-                    if returncode != 0:
-                        rc = "\033[91m!\033[0m"
+                    if returncode == 0:
+                        rc = "\033[92m➜\033[0m"
+                    elif returncode == 2:
+                        rc = "\033[90m➜\033[0m"
                     else:
-                        rc = "\033[92m!\033[0m"
-                    command = input(f"\n\033[33mArcLang {rc}\033[0m> ")
+                        rc = "\033[91m➜\033[0m"
+                    command = input(f"\n\033[0mArcLang {rc}\033[0m ")
                     tokens = tokenization(command)
                     returncode = func_caller(tokens)
                     set(["errorlevel","=",f"{returncode}"])
@@ -969,6 +1011,10 @@ if __name__ == "__main__":
     func_allowance = False
     global loop_contents
     loop_contents = []
+    global random_min
+    global random_max
+    random_min = 1
+    random_max = 100
 
     if len(sys.argv) > 1:
         if sys.argv[1] == "--v":

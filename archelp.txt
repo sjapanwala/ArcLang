@@ -14,6 +14,7 @@ Commands:
       IC  |  !teach     shows this menu
       FC  |  varlist    lists all the variables
       FC  |  varcheck   check the existance of a variable
+      FC  |  funclist   shows all registered functions
       FC  |  set        sets a variable;mutable
       FC  |  const      sets a variable;immutable
       FC  |  let        sets a undefined variable;mutable
@@ -26,12 +27,30 @@ Commands:
       FC  |  elsefi     is the equal to `else if`
       FC  |  default    is the equal to `else`
       FC  |  //         adds comments
+      FC  | numceil     rounds float numbers with provided sig digs
+      FC  | repeat      loops down to an iteration
+      FC  | rand        provides a random value (min,max)
 
-Presedence Levels:
 
-      1   |  ?			| variable evaluation
-      2   |  _			| spacial evaluation
-      3   |  () 		| Math and logic
+
+
+Pre Defined Vars:
+
+  ?pi           |   Pi Value       |   3.14
+  ?eu           |   Eulars Value   |   2.72
+  ?errorlevel   |   Return Value   |   0/1
+  ?uname        |   Username       |   ?uname
+  ?version      |   Version Name   |   ?version
+  ?iteration    |   Loops Iter Val |   starts 0
+  ?rand         |   Random Val     |   1-100
+
+Status Codes:
+
+  0   |   Neutral
+  1   |   Ambiguous Error
+  2   |   Avoidance
+  3   |   Type Error
+  4   |   Syntax Error
 
 
 Lessons: 
@@ -199,6 +218,15 @@ Lessons:
     3
 
     ```
+    Lesson 6: Iteration Loops
+
+    using the `repeat` function, we can use loops.
+    ```alang
+    repeat 5 {
+      stdout Hello!
+    }
+    ```
+    this will repeat 5 times!
 
    
 

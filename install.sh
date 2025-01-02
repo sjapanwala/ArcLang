@@ -1,5 +1,5 @@
 #!/bin/bash
-TARGET_PATH="/usr/local/bin/py"
+TARGET_PATH="/usr/local/bin/alang"
 PYTHON_SCRIPT_URL="https://raw.githubusercontent.com/sjapanwala/ArcLang/refs/heads/main/alang.py"
 
 # Check if the script is already installed
