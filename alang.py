@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from sys import exception
 import subprocess, getpass, os, time
-from os import sys
+from os import error, sys
 from os import system
 import operator
 import random
@@ -91,7 +91,13 @@ methods = {
             "params": 2,
             "param_order": ["$a","$b"],
             'content': ['return ( $a / $b )', '}']
-        }
+        },
+        "test": {
+            "returntype": "void",
+            "params": 0,
+            "param_order": [],
+            "content": ['end 3','}']
+            }
     }
 
 
@@ -120,6 +126,8 @@ def tokenization(user_input):
             if token[0] == "@":
                 ec,return_val = run_func(token[1:],token_array)
                 token_array[i] = return_val[0]
+                global func_code
+                func_code = ec
         if "(" in token_array:
             token_array = do_math(token_array)
         return token_array
@@ -184,7 +192,7 @@ def func_caller(tokens):
                 print(f"\033[91mfunction:call error: \033[0mthe function '{user_input}' does not exist")
                 return 1
             else:
-                error_code = run_func(user_input[1:],tokens[1:])
+                error_code = func_code
                 return error_code
     if user_input in globals() and callable(globals()[user_input]):
         error_code = globals()[user_input](list(tokens[1:]))
@@ -283,7 +291,7 @@ def run_func(funcname, params):
         content[i] = line
     
     # Process content
-    ec = 0
+    ec = 1
     returnval = []
     
     for line in content:
@@ -330,6 +338,15 @@ def construct_functions(tokens):
         else:
             func_name = tokens[1]
             func_intake = tokens[2:-1]
+            check = []
+            for var in func_intake:
+                if var[:var.find(";")] not in check:
+                    check.append(var[:var.find(";")])
+                else:
+                    print("\033[91mfunc:duplicate vars: \033[0mprovided 1 or more duplicate header vars")
+                    return 1
+            check = []
+
             if func_name in methods:
                 print("\033[91mfunction:exists error: \033[0mfunction already exists")
                 return 1
@@ -375,6 +392,10 @@ def construct_functions(tokens):
                     if not find_return:
                         print(f"\033[91mfunction:syntax error: \033[0mno return value; expected type;{functype}")
                         return 4
+                    if "end" not in function_instructions:
+                        print("no-no")
+                        return 1
+
 
                 param_order = []
                 for param in func_intake:
@@ -394,7 +415,6 @@ def construct_functions(tokens):
             
 
                 
-
                 methods[func_name] = {
                     "returntype": functype,
                     "params": len(func_intake),
@@ -536,14 +556,18 @@ def varlist(void):
                 #show_val = f"{variables[key]['value']}"
             if str(variables[key]['cat']) == "preset":
                 show_mod = "False"
+                mod_col = "\033[91m"
             elif str(variables[key]['cat']) == "func":
                 show_mod = "Reserved"
+                mod_col = "\033[90m"
             else:
                 show_mod = "True"
+                mod_col = "\033[92m"
+            reset = "\033[0m"
             print(format_string.format(
                 str(key), 
                 str(show_mod),
-                str(variables[key]['type']), 
+                str(variables[key]['type']),
                 str(variables[key]['value'])
             ))
         return 0
@@ -950,6 +974,29 @@ def ls(tokens):
         return 0
     except:
         return 1
+
+def run(tokens):
+    if len(tokens) != 1:
+        print('\033[91mrun:file error:\033[0m too many / no run file provided')
+        return 1
+    elif checkfile(tokens[0]):
+        global file_path
+        file_path = tokens[0]
+        global file_mode
+        file_mode = True
+        open_file(file_path)
+        if envriornment_config["print_error_code"] == True:
+            if returncode != 0:
+                print(f"\033[97mExit Code: \033[91m{returncode}\033[0m")
+            else:
+                print(f"\033[97mExit Code: \033[92m{returncode}\033[0m")
+        file_mode = False
+        return 1
+    else:
+        print('\033[91mrun:file error: \033[0mnot a valid file')
+        return 1
+
+
 
 
 
