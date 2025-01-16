@@ -1,3 +1,3 @@
-stdin age;int Age
-set y = ( ?age + 8 )
-stdout ?y
+fi ( 2 == 3 ) stdout a
+elsefi ( 2 == 4 ) stdout b
+default stdout c

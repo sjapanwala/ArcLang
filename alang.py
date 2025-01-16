@@ -392,9 +392,6 @@ def construct_functions(tokens):
                     if not find_return:
                         print(f"\033[91mfunction:syntax error: \033[0mno return value; expected type;{functype}")
                         return 4
-                    if "end" not in function_instructions:
-                        print("no-no")
-                        return 1
 
 
                 param_order = []
@@ -425,6 +422,8 @@ def construct_functions(tokens):
 
 
 def fi(tokens):
+    if len(tokens) < 1:
+        print("\033[91mfi:condition error:\033[0mno condition provided")
     if envriornment_config["showtokens"] == True:
         print(tokens)
     global fi_code
@@ -436,7 +435,32 @@ def fi(tokens):
     else:
         fi_code = 1
         return 1
+
+def elsefi(tokens):
+    global fi_code
+    if len(tokens) < 1:
+        print("\033[91melsefi:condition error:\033[0mno condition provided")
+    if fi_code != 1:
+        return 1
+    else:
+        if tokens[0] == True:
+            func_caller(tokens[1:])
+            fi_code = 0
+            return 0
+        else:
+            fi_code = 1
+            return 1
+
+def default(tokens):
+    if len(tokens) < 1:
+        print("\033[91mdefault:condition error:\033[0mno condition provided")
+    if fi_code !=1:
+        return 1
+    else:
+        func_caller(tokens[0:])
+        return 0
     
+
 def repeat(tokens):
     """
     repeat 5 {
@@ -514,25 +538,7 @@ def rand(tokens):
 
 
 
-def elsefi(tokens):
-    global fi_code
-    if fi_code != 1:
-        return 1
-    else:
-        if tokens[0] == True:
-            func_caller(tokens[1:])
-            fi_code = 0
-            return 0
-        else:
-            fi_code = 1
-            return 1
 
-def default(tokens):
-    if fi_code !=1:
-        return 1
-    else:
-        func_caller(tokens[0:])
-        return 0
 
 
 
