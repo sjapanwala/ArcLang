@@ -31,7 +31,7 @@ variables = {
         "version": {
             "cat": "preset",
             "type": "str",
-            "value": "v01/25"
+            "value": "v01.1/25"
             },
         "pi": {
             "cat": "preset",
@@ -91,13 +91,7 @@ methods = {
             "params": 2,
             "param_order": ["$a","$b"],
             'content': ['return ( $a / $b )', '}']
-        },
-        "test": {
-            "returntype": "void",
-            "params": 0,
-            "param_order": [],
-            "content": ['end 3','}']
-            }
+        }
     }
 
 
@@ -139,8 +133,8 @@ file_contents = []
 
 def checkfile(filepath):
     if os.path.isfile(filepath):
-        if filepath[-3:] != ".al":
-            print("\033[91mfile:type error: \033[0mfile must be of type .al")
+        if filepath[-4:] != ".arc":
+            print("\033[91mfile:type error: \033[0mfile must be of type .arc")
             return False
         return True
     else:
@@ -392,10 +386,7 @@ def construct_functions(tokens):
                     if not find_return:
                         print(f"\033[91mfunction:syntax error: \033[0mno return value; expected type;{functype}")
                         return 4
-                    if "end" not in function_instructions:
-                        print("no-no")
-                        return 1
-
+                    
 
                 param_order = []
                 for param in func_intake:
@@ -461,7 +452,7 @@ def repeat(tokens):
     try:
         if file_mode:
             func_header = f"repeat {repeat_val} {{"
-            repeat_val -= 1
+            #repeat_val += 1
             with open(file_path,"r") as read_file:
                 for line in read_file:
                     if line.strip() == func_header:
@@ -621,8 +612,8 @@ def varcheck(void):
         return 1
 
 def quick_commands(user_input):
-    help = """
-    Welcome To ArcLang \033[92m0.1\033[0m
+    help = f"""
+    Welcome To ArcLang \033[92m{variables['version']['value']}\033[0m
     
     ArcLang is a basic interpretor built in Python3 for a custom build language.
     for help with how to write code, please type "!teach"
@@ -915,8 +906,19 @@ def stdin(tokens):
 
         phrase = " ".join(tokens[1:])
         
-        var_val = input(f"\033[33mSTDIN \033[0m{phrase} ")
-        
+        var_val = input(f"\033[33m{var_type} \033[0m{phrase} ")
+        if var_type == "str":
+            try:
+                str(var_val)
+            except:
+                print(f"\033[91mstdin:type error: \033[0minvalid type provided, expected {var_type}")
+                exit(1)
+        elif var_type == "int":
+            try:
+                int(var_val)
+            except:
+                print(f"\033[91mstdin:type error: \033[0minvalid type provided, expected {var_type}")
+                exit(1)
         if not var_val:
             var_val = "not specified"
         variables[var_key] = {
@@ -965,7 +967,7 @@ def ls(tokens):
     files = []
     try:
         for filename in os.listdir(dir_path):
-            if filename[filename.rfind("."):] == ".al":
+            if filename[filename.rfind("."):] == ".arc":
                 files.append(filename)
             else:
                 continue
@@ -1003,7 +1005,7 @@ def run(tokens):
 
 
 def main(returncode):
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and not TEST:
         if checkfile(sys.argv[1]):
             global file_path
             file_path = sys.argv[1]
@@ -1064,7 +1066,15 @@ if __name__ == "__main__":
     random_max = 100
 
     if len(sys.argv) > 1:
+        TEST = False
         if sys.argv[1] == "--v":
             print(f"ArcLang Version: \033[92m{variables['version']['value']}\033[0m\nfrom: www.github.com/sjapanwala/ArcLang")
             exit()
+        elif "env:show-ec" in sys.argv:
+            envriornment_config["print_error_code"] = True
+            TEST = True
+        elif "env:show-tk" in sys.argv:
+            envriornment_config["showtokens"] = True
+            TEST = True
+
     main(returncode)

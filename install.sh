@@ -53,4 +53,4 @@ fi
 # Cleanup script
 echo -e "\033[35mScript Finished\033[0m"
 SCRIPT_NAME=$(basename "$0")
-sudo rm -- "$SCRIPT_NAME"
+#sudo rm -- "$SCRIPT_NAME"
