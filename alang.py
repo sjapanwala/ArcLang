@@ -311,6 +311,7 @@ def run_func(funcname, params):
     return ec, returnval
 
 def construct_functions(tokens):
+    # Initial validation checks remain the same
     if tokens[0].find(";") == -1:
         print("\033[91mfunction:type error: \033[0mno return type specified")
         return 3
@@ -329,96 +330,118 @@ def construct_functions(tokens):
         elif tokens[-1] != "{":
             print("\033[91mfunction:syntax error: \033[0mno function opener specified")
             return 4
-        else:
-            func_name = tokens[1]
-            func_intake = tokens[2:-1]
-            check = []
-            for var in func_intake:
-                if var[:var.find(";")] not in check:
-                    check.append(var[:var.find(";")])
-                else:
-                    print("\033[91mfunc:duplicate vars: \033[0mprovided 1 or more duplicate header vars")
-                    return 1
-            check = []
-
-            if func_name in methods:
-                print("\033[91mfunction:exists error: \033[0mfunction already exists")
+        
+        # Function header validation
+        func_name = tokens[1]
+        func_intake = tokens[2:-1]
+        check = []
+        for var in func_intake:
+            if var[:var.find(";")] not in check:
+                check.append(var[:var.find(";")])
+            else:
+                print("\033[91mfunc:duplicate vars: \033[0mprovided 1 or more duplicate header vars")
                 return 1
-            for i in func_intake:
-                if i != "$void":
-                    if i[0] != "$":
-                        print("\033[91mfunction:syntax error: \033[0mno function intake specified")
-                        return 4
-                if i.find(";") == -1:
-                    if i != "$void":
-                        print(f"\033[91mfunction:type error: \033[0mno function intake type specified for {i}")
-                        return 3
+        check = []
 
-                
-                # we come here if all is good, we can start reading the function now
-                function_instructions = []
-                repeat_flag = False
-                if file_mode:
-                    func_header = " ".join(tokens)
-                    with open(file_path, "r") as file:
-                        for line in file:
-                            if line.strip() == func_header.strip():
-                                if "}" in line.strip() and repeat_flag:
-                                    repeat_flag = False
-                                while "}" not in line.strip() and not repeat_flag:
-                                    line = file.readline()
-                                    if "repeat" in line:
-                                        repeat_flag = True
-                                    global func_ignore
-                                    func_ignore.append(line.strip())
-                                    function_instructions.append(line.strip())
-
-                        
-
-                else:
-                    file_input = ""
-                    while "}" not in file_input:
-                        file_input = input("func;> ")
-                        function_instructions.append(file_input)
-
-                if functype != "void":
-                    find_return = False
-                    for cont in function_instructions:
-                        if "return" in cont:
-                            find_return = True
-
-
-                    if not find_return:
-                        print(f"\033[91mfunction:syntax error: \033[0mno return value; expected type;{functype}")
-                        return 4
-                    
-
-                param_order = []
-                for param in func_intake:
-                    if param != "$void":
-                        if len(func_intake) >= 1:
-                            semi_idx = param.find(";")
-                            param_name = param[:semi_idx]
-                            param_type = param[semi_idx+1:]
-                            param_order.append(param_name)
-                            variables[param_name] = {
-                                    "cat": "func",
-                                    "type": param_type,
-                                    "value": "hidden"
-                                    }
-                    else:
-                        func_intake = []
+        if func_name in methods:
+            print("\033[91mfunction:exists error: \033[0mfunction already exists")
+            return 1
             
+        for i in func_intake:
+            if i != "$void":
+                if i[0] != "$":
+                    print("\033[91mfunction:syntax error: \033[0mno function intake specified")
+                    return 4
+            if i.find(";") == -1:
+                if i != "$void":
+                    print(f"\033[91mfunction:type error: \033[0mno function intake type specified for {i}")
+                    return 3
 
+        # Function body reading with proper brace tracking
+        function_instructions = []
+        if file_mode:
+            func_header = " ".join(tokens)
+            brace_count = 0
+            found_function = False
+            
+            with open(file_path, "r") as file:
+                lines = file.readlines()
                 
-                methods[func_name] = {
-                    "returntype": functype,
-                    "params": len(func_intake),
-                    "param_order": param_order,
-                    "content": function_instructions,
-                        }
-                print(methods[func_name])
-                return 0
+            for line in lines:
+                line = line.strip()
+                
+                # Start collecting when we find the function header
+                if line == func_header.strip():
+                    found_function = True
+                    brace_count += 1  # Count the opening brace
+                    continue
+                
+                if found_function:
+                    # Count braces in the line
+                    brace_count += line.count("{")
+                    brace_count -= line.count("}")
+                    
+                    # Add the line to instructions
+                    function_instructions.append(line)
+                    
+                    # If brace_count is 0, we've found the matching closing brace
+                    if brace_count == 0:
+                        # Remove the last line (closing brace) from instructions
+                        function_instructions.pop()
+                        break
+        else:
+            # Interactive mode with proper brace tracking
+            brace_count = 1  # Start with 1 for the opening brace
+            while brace_count > 0:
+                file_input = input("func;> ")
+                if not file_input.strip():  # Skip empty lines
+                    continue
+                
+                # Count all braces in the current line
+                brace_count += file_input.count("{")
+                brace_count -= file_input.count("}")
+                
+                # Only add the line if it's not the final closing brace
+                if brace_count > 0 or (file_input.strip() != "}" and brace_count == 0):
+                    function_instructions.append(file_input)
+
+        # Validate return statement if needed
+        if functype != "void":
+            find_return = False
+            for cont in function_instructions:
+                if "return" in cont:
+                    find_return = True
+
+            if not find_return:
+                print(f"\033[91mfunction:syntax error: \033[0mno return value; expected type;{functype}")
+                return 4
+
+        # Process parameters
+        param_order = []
+        for param in func_intake:
+            if param != "$void":
+                if len(func_intake) >= 1:
+                    semi_idx = param.find(";")
+                    param_name = param[:semi_idx]
+                    param_type = param[semi_idx+1:]
+                    param_order.append(param_name)
+                    variables[param_name] = {
+                        "cat": "func",
+                        "type": param_type,
+                        "value": "hidden"
+                    }
+            else:
+                func_intake = []
+
+        # Create the method entry
+        methods[func_name] = {
+            "returntype": functype,
+            "params": len(func_intake),
+            "param_order": param_order,
+            "content": function_instructions,
+        }
+        print(methods[func_name])
+        return 0
 
 
 def fi(tokens):
