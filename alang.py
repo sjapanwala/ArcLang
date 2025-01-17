@@ -357,13 +357,18 @@ def construct_functions(tokens):
                 
                 # we come here if all is good, we can start reading the function now
                 function_instructions = []
+                repeat_flag = False
                 if file_mode:
                     func_header = " ".join(tokens)
                     with open(file_path, "r") as file:
                         for line in file:
                             if line.strip() == func_header.strip():
-                                while "}" not in line.strip():
+                                if "}" in line.strip() and repeat_flag:
+                                    repeat_flag = False
+                                while "}" not in line.strip() and not repeat_flag:
                                     line = file.readline()
+                                    if "repeat" in line:
+                                        repeat_flag = True
                                     global func_ignore
                                     func_ignore.append(line.strip())
                                     function_instructions.append(line.strip())
@@ -412,6 +417,7 @@ def construct_functions(tokens):
                     "param_order": param_order,
                     "content": function_instructions,
                         }
+                print(methods[func_name])
                 return 0
 
 
@@ -430,59 +436,80 @@ def fi(tokens):
     
 def repeat(tokens):
     """
+    Handle repeat loops in both file and interactive modes
+    token_input -> ["5","{"]
     repeat 5 {
-
+        // contents
     }
     """
+    # Input validation
     if len(tokens) < 1:
         print("\033[91mrepeat:value: \033[0mno repition attribute assigned")
         return 1
     elif tokens[-1] != "{":
         print("\033[91mrepeat:opener: \033[0mno repeat loop opener provided")
         return 1
-    else:
-        try:
-            isinstance(tokens[0],int)
-            repeat_val = int(tokens[0])
-        except:
-            print("\033[91mrepeat:type error: \033[0mno int assigned for repeator")
-            return 3
+    
+    # Parse repeat value
+    try:
+        repeat_val = int(tokens[0])
+    except ValueError:
+        print("\033[91mrepeat:type error: \033[0mno int assigned for repeator")
+        return 3
         
     loop_contents = []
+    
     try:
         if file_mode:
             func_header = f"repeat {repeat_val} {{"
-            #repeat_val += 1
-            with open(file_path,"r") as read_file:
-                for line in read_file:
-                    if line.strip() == func_header:
-                        with open(file_path) as read_file:
-                            for line in read_file:
-                                while "}" not in line.strip():
-                                    line = read_file.readline()
-                                    line = line.strip()
-                                    if line != "}":
-                                        loop_contents.append(line)
+            inside_loop = False
+            repeat_val = repeat_val - 1
+            
+            with open(file_path, "r") as read_file:
+                lines = read_file.readlines()
+                
+            for i, line in enumerate(lines):
+                line = line.strip()
+                
+                # Find the start of our repeat block
+                if line == func_header:
+                    inside_loop = True
+                    continue
+                
+                # Collect contents until closing brace
+                if inside_loop:
+                    if line == "}":
+                        break
+                    if line:  # Only add non-empty lines
+                        loop_contents.append(line)
         else:
+            # Interactive mode remains the same
             file_input = ""
             while file_input != "}":
                 file_input = input("repeat loop> ")
                 if file_input != "}":
                     loop_contents.append(file_input)
-    except:
+    
+    except Exception as e:
+        print(f"\033[91mrepeat:error: \033[0m{str(e)}")
         return 1
-
+        
     try:
-        indep = variables["iteration"]["value"]
-        while indep < repeat_val:
-            for i in loop_contents:
-                minitoke = tokenization(i)
+        # Reset iteration counter
+        variables["iteration"]["value"] = 0
+        
+        # Execute the loop contents repeat_val times
+        for _ in range(repeat_val):
+            for command in loop_contents:
+                minitoke = tokenization(command)
                 func_caller(minitoke)
                 variables["iteration"]["value"] += 1
-                indep += 1
+                
         variables["iteration"]["value"] = 0
         return 0
-    except:
+        
+    except Exception as e:
+        print(f"\033[91mrepeat:execution error: \033[0m{str(e)}")
         return 1
 
 
