@@ -1,14 +1,4 @@
-<div align=center>
-    <img src="logo.png" width="150" length="150">
-</div>
+Depreciated, Converted to [CarbonScript](https://github.com/sjapanwala/carbonscript.git).
 
-## Welcome To **ARC LANG**
-
-- Arc Lang is a hobby language made by *Saaim Japanwala*
-- An interpretor based lanage built in Python
-
-## Installation Run
-```bash
-curl -s -o https://raw.githubusercontent.com/sjapanwala/ArcLang/refs/heads/main/install.sh && bash install.sh
-```
+Previously Called Arclang (v11/24 - v1.0/25) - CarbonScript (V1.2/25 -> Present)
 
